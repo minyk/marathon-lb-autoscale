@@ -10,7 +10,7 @@ will then attempt to maintain a defined target number of requests per second
 per app instance. Marathon-lb-autoscale will make API calls to Marathon to
 scale the app.
 
-![Incredible diagram](https://raw.github.com/brndnmtthws/marathon-lb-autoscale/master/marathon-lb-autoscale.png)
+![Incredible diagram](https://raw.github.com/mesosphere/marathon-lb-autoscale/master/marathon-lb-autoscale.png)
 
 ## How do I use it?
 
@@ -51,7 +51,7 @@ Common options:
   "container": {
     "type": "DOCKER",
     "docker": {
-      "image": "brndnmtthws/marathon-lb-autoscale",
+      "image": "mesosphere/marathon-lb-autoscale",
       "network": "HOST",
       "forcePullImage": true
     }
