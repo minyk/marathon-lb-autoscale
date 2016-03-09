@@ -244,7 +244,7 @@ class Autoscale
     apps = JSON.parse(apps)
     instances = {}
     apps['apps'].each do |app|
-      id = app['id'][1..-1] # trim leading '/'
+      id = app['id'][1..-1].gsub '/', '_' # trim leading '/'  # gsub add support for folders
       instances[id] = app['instances']
     end
     # Find our app backends
@@ -267,6 +267,8 @@ class Autoscale
     to_scale = {}
     @apps.each do |app,data|
       app_id = app.match(/(.*)_\d+$/)[1]
+      app_id = app_id.dup.gsub '_', '/' # support for folders.
+
       # Scale if: the target and current instances don't match, we've exceed the
       # threshold difference, and a scale operation wasn't performed recently
       if data[:target_instances] == data[:current_instances]
