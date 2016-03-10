@@ -81,7 +81,7 @@ class Optparser
       opts.on("--intervals-past-threshold Integer", Integer, "An app won't be" +
               " scaled until it's past it's threshold for this many intervals (Default: " +
               "#{options.intervals_past_threshold})") do |value|
-        options.threshold_instances = value
+        options.intervals_past_threshold = value
       end
 
       opts.separator ""
