@@ -11,6 +11,13 @@ require 'set'
 require 'json'
 require 'resolv'
 
+class Integer
+  N_BYTES = [42].pack('i').size
+  N_BITS = N_BYTES * 16
+  MAX = 2 ** (N_BITS - 2) - 1
+  MIN = -MAX - 1
+end
+
 class Optparser
   def self.parse(args)
     options = OpenStruct.new
@@ -26,6 +33,8 @@ class Optparser
     options.intervals_past_threshold = 3
     options.marathonCredentials =  []
     options.haproxyCredentials = []
+    options.max_instances = Integer::MAX
+    options.min_instances = 1
 
     opt_parser = OptionParser.new do |opts|
       opts.banner = "Usage: autoscale.rb [options]"
@@ -41,7 +50,7 @@ class Optparser
       opts.on("--haproxy [URLs]",
               "Comma separate list of URLs for HAProxy. If this is a Mesos-DNS A-record, " +
               "all backends will be polled.") do |value|
-        options.haproxy = value.split(/,/).map{|x|URI(x)}
+        options.haproxy = value.split(/,/).map { |x| URI(x) }
       end
 
       opts.on("--interval Float", Float, "Number of seconds (N) between update intervals " +
@@ -88,10 +97,16 @@ class Optparser
         options.threshold_instances = value
       end
 
-      opts.on("--intervals-past-threshold Integer", Integer, "An app won't be" +
-              " scaled until it's past it's threshold for this many intervals (Default: " +
-              "#{options.intervals_past_threshold})") do |value|
-        options.intervals_past_threshold = value
+      opts.on("--max-instances Integer", Integer, "Maximum number " +
+              "of instances an app may be scaled to (Default: " +
+              "a huge number)") do |value|
+        options.max_instances = value
+      end
+
+      opts.on("--min-instances Integer", Integer, "Minimum number " +
+              "of instances an app must have (Default: " +
+              "#{options.min_instances})") do |value|
+        options.min_instances = value
       end
 
       opts.separator ""
@@ -283,7 +298,13 @@ class Autoscale
   def calculate_target_instances
     @apps.each do |app,data|
       data[:target_instances] =
-        [(data[:rate_avg] / @options.target_rps).ceil, 1].max
+        [
+          [
+            (data[:rate_avg] / @options.target_rps).ceil,
+            options.min_instances
+          ].max,
+          options.max_instances
+        ].min
     end
   end
 
