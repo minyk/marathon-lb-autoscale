@@ -356,9 +356,10 @@ class Autoscale
     scale_list.each do |app,instances|
       req = Net::HTTP::Put.new('/v2/apps/' + app)
       if !@options.marathonCredentials.empty?
-        req.basic_auth @options.marathonCredentials[0], @options.marathonCredentials[1]
+        req.basic_auth(@options.marathonCredentials[0],
+                       @options.marathonCredentials[1])
       end
-      req.content_type 'application/json'
+      req.content_type = 'application/json'
       req.body = JSON.generate({'instances'=>instances})
 
       Net::HTTP.new(@options.marathon.host,
