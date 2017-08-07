@@ -35,6 +35,7 @@ class Optparser
     options.haproxyCredentials = []
     options.max_instances = Integer::MAX
     options.min_instances = 1
+    options.verbose = false
     options.haproxy_frontend_or_backend = "FRONTEND"
 
     opt_parser = OptionParser.new do |opts|
@@ -110,6 +111,10 @@ class Optparser
         options.min_instances = value
       end
 
+      opts.on("-v", "--[no-]verbose", "Run verbosely") do |value|
+        options.verbose = value
+      end
+
       opts.on("--haproxy_frontend_or_backend String", String, "If we have " +
               "to monitor backend or frontends in haproxy (Default: " +
               "#{options.haproxy_frontend_or_backend})") do |value|
@@ -136,6 +141,9 @@ class Autoscale
     @options = options
     @log = Logger.new(STDOUT)
     @log.level = Logger::INFO
+    if options.verbose == true
+      @log.level = Logger::DEBUG
+    end
     @log.formatter = proc do |severity, datetime, progname, msg|
       date_format = datetime.strftime("%FT%T")
       if severity == "ERROR" or severity == "WARN"
@@ -178,6 +186,8 @@ class Autoscale
         end
         aggregate_haproxy_data(haproxy_data)
 
+        @log.debug("HA-Proxy data: %p" % haproxy_data)
+
         update_current_marathon_instances
 
         calculate_target_instances
@@ -192,6 +202,7 @@ class Autoscale
         end
 
         total_samples += 1
+        @log.debug("total sample %d" % total_samples)
       rescue Exception => msg
         @log.error("Caught exception: " + msg.to_s)
         @log.error(msg.backtrace)
@@ -272,6 +283,7 @@ class Autoscale
       data[:rate] << rate
       data[:rate_avg] =
         data[:rate].inject(0.0) { |sum,el| sum + el } / data[:rate].size
+      @log.debug("AVG Rate for %s: %0.2f" % [app, data[:rate_avg]])
     end
   end
 
@@ -298,6 +310,7 @@ class Autoscale
       if instances.has_key?(app_id)
         data[:current_instances] = instances[app_id]
       end
+      @log.debug("%s currently has %d instances" % [app, data[:current_instances]])
     end
   end
 
@@ -311,6 +324,7 @@ class Autoscale
           ].max,
           @options.max_instances
         ].min
+      @log.debug("%s should target for %d instances" % [app, data[:target_instances]])
     end
   end
 
@@ -354,6 +368,7 @@ class Autoscale
         data[:last_scaled] = Time.now.to_f
       end
     end
+    @log.debug("Scale list %p "% to_scale)
     to_scale
   end
 
